@@ -1,3 +1,9 @@
+-- Behavior test of the fp_hard_sigmoid, 
+-- you should notice that the sigmoid output changes at the rising edge of the clock signal.
+-- Version: 1.0
+-- Created by: Chao
+-- Last modified date: 2022.11.06
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -56,7 +62,7 @@ begin
     begin
         sigmoid_input <= std_logic_vector(to_signed(0, 8));
         wait until reset='0';
-        wait until clock='1';
+        wait until clock='0';
         sigmoid_input <= std_logic_vector(to_signed(0, 8));
         wait for C_CLK_PERIOD*4;
         sigmoid_input <= std_logic_vector(to_signed(-4, 8));

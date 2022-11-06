@@ -1,5 +1,6 @@
 -- This is the hard_sigmoid implementation for fixed point data
 -- it has to use DSP slices to finish the arithmetic computation
+-- Prefetching data is necessary since this layer is clocked
 -- Version: 1.0
 -- Created by: Chao
 -- Last modified date: 2022.11.06
@@ -10,14 +11,14 @@ use ieee.numeric_std.all;
 
 entity fp_hard_sigmoid is
 generic (
-        DATA_WIDTH : Integer;
-        FRAC_WIDTH : Integer;
-        ONE : Integer;
-        ZERO_THRESHOLD : Integer;
-        ONE_THRESHOLD : Integer;
-        SLOPE : Integer;
-        Y_INTERCEPT: Integer
-    );
+    DATA_WIDTH : Integer;
+    FRAC_WIDTH : Integer;
+    ONE : Integer;
+    ZERO_THRESHOLD : Integer;
+    ONE_THRESHOLD : Integer;
+    SLOPE : Integer;
+    Y_INTERCEPT: Integer
+);
 
 port (
     enable : in std_logic;

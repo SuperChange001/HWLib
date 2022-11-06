@@ -1,3 +1,9 @@
+-- This is the hard_sigmoid implementation for fixed point data
+-- it has to use DSP slices to finish the arithmetic computation
+-- Version: 1.0
+-- Created by: Chao
+-- Last modified date: 2022.11.06
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -29,8 +35,8 @@ architecture rtl of fp_hard_sigmoid is
     constant fp_y_intercept : signed(DATA_WIDTH-1 downto 0) := to_signed(Y_INTERCEPT, DATA_WIDTH);
 
     function linear_op(a : in signed(DATA_WIDTH-1 downto 0);
-                      x : in signed(DATA_WIDTH-1 downto 0);
-                      b : in signed(DATA_WIDTH-1 downto 0)
+                    x : in signed(DATA_WIDTH-1 downto 0);
+                    b : in signed(DATA_WIDTH-1 downto 0)
             ) return signed is
 
         variable TEMP : signed(DATA_WIDTH*2-1 downto 0) := (others=>'0');
@@ -61,18 +67,18 @@ begin
 
     main_process : process (enable, clock)
     begin
-      if (enable = '0') then
-        fp_output <= to_signed(0, DATA_WIDTH);
-      elsif (rising_edge(clock)) then
-
-        if fp_input <= to_signed(ZERO_THRESHOLD, DATA_WIDTH) then
+        if (enable = '0') then
             fp_output <= to_signed(0, DATA_WIDTH);
-        elsif fp_input >= to_signed(ONE_THRESHOLD, DATA_WIDTH) then
-            fp_output <= to_signed(ONE, DATA_WIDTH);
-        else
-            fp_output <= linear_op(fp_input, fp_slop, fp_y_intercept);
+        elsif (rising_edge(clock)) then
+
+            if fp_input <= to_signed(ZERO_THRESHOLD, DATA_WIDTH) then
+                fp_output <= to_signed(0, DATA_WIDTH);
+            elsif fp_input >= to_signed(ONE_THRESHOLD, DATA_WIDTH) then
+                fp_output <= to_signed(ONE, DATA_WIDTH);
+            else
+                fp_output <= linear_op(fp_input, fp_slop, fp_y_intercept);
+            end if;
         end if;
-      end if;
     end process;
 
 end architecture rtl;

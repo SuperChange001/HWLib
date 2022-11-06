@@ -1,0 +1,6 @@
+.simulation
+.simulation/*
+xvhdl.log
+xvhdl.pb
+xsim.dir
+xsim.dir/*

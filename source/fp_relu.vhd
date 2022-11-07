@@ -11,7 +11,7 @@ use ieee.numeric_std.all;
 
 entity fp_relu is
 generic (
-    DATA_WIDTH : Integer;
+    DATA_WIDTH : integer;
     CLOCK_OPTION : boolean := true
 );
 

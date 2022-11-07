@@ -11,13 +11,13 @@ use ieee.numeric_std.all;
 
 entity fp_hard_sigmoid is
 generic (
-    DATA_WIDTH : Integer;
-    FRAC_WIDTH : Integer;
-    ONE : Integer;
-    ZERO_THRESHOLD : Integer;
-    ONE_THRESHOLD : Integer;
-    SLOPE : Integer;
-    Y_INTERCEPT: Integer
+    DATA_WIDTH : integer;
+    FRAC_WIDTH : integer;
+    ONE : integer;
+    ZERO_THRESHOLD : integer;
+    ONE_THRESHOLD : integer;
+    SLOPE : integer;
+    Y_INTERCEPT: integer
 );
 
 port (
@@ -35,6 +35,9 @@ architecture rtl of fp_hard_sigmoid is
     constant fp_slop : signed(DATA_WIDTH-1 downto 0) := to_signed(SLOPE, DATA_WIDTH);
     constant fp_y_intercept : signed(DATA_WIDTH-1 downto 0) := to_signed(Y_INTERCEPT, DATA_WIDTH);
 
+    -----------------------------------------------------------
+    -- functions
+    -----------------------------------------------------------
     function linear_op(a : in signed(DATA_WIDTH-1 downto 0);
                     x : in signed(DATA_WIDTH-1 downto 0);
                     b : in signed(DATA_WIDTH-1 downto 0)

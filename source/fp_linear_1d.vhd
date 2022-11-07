@@ -9,7 +9,6 @@ use work.all;
 entity fp_linear_1d is
     generic (
         ADDR_X_WIDTH : integer;
-        ADDR_W_WIDTH : integer;
         ADDR_Y_WIDTH : integer;
         DATA_WIDTH : integer;
         FRAC_WIDTH : integer;
@@ -20,28 +19,16 @@ entity fp_linear_1d is
         enable : in std_logic;
         clock  : in std_logic;
         addr_x : out std_logic_vector(ADDR_X_WIDTH-1 downto 0);
-        addr_w : out std_logic_vector(ADDR_W_WIDTH-1 downto 0);
         addr_y : in std_logic_vector(ADDR_Y_WIDTH-1 downto 0);
 
         x_in   : in std_logic_vector(DATA_WIDTH-1 downto 0);
-        w_in   : in std_logic_vector(DATA_WIDTH-1 downto 0);
-        b_in   : in std_logic_vector(DATA_WIDTH-1 downto 0);
-        
         y_out  : out std_logic_vector(DATA_WIDTH-1 downto 0);
+
         done   : out std_logic
     );
 end fp_linear_1d;
 
 architecture rtl of fp_linear_1d is
-    constant FP_ZERO : signed(DATA_WIDTH-1 downto 0) := (others=>'0');
-
-    type t_state is (s_stop, s_forward, s_idle);
-
-    signal fp_x, fp_w, fp_b, fp_y, macc_sum: signed(DATA_WIDTH-1 downto 0);
-
-    signal reset : std_logic := '0';
-    signal state : t_state;
-
     -----------------------------------------------------------
     -- functions
     -----------------------------------------------------------
@@ -71,9 +58,46 @@ architecture rtl of fp_linear_1d is
         return TEMP2+y_0;
     end function;
 
+    function log2(val : INTEGER) return natural is
+        variable res : natural;
+    begin
+        for i in 0 to 31 loop
+            if (val <= (2 ** i)) then
+                res := i;
+                exit;
+            end if;
+        end loop;
+        return res;
+    end function log2;
+
+    constant FP_ZERO : signed(DATA_WIDTH-1 downto 0) := (others=>'0');
+
+    type t_state is (s_stop, s_forward, s_idle);
+
+    signal n_clock : std_logic;
+    signal w_in : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal b_in : std_logic_vector(DATA_WIDTH-1 downto 0);
+
+    signal addr_w : std_logic_vector(log2(IN_FEATURE_COUNT*OUT_FEATURE_COUNT)-1 downto 0);
+    signal addr_b : std_logic_vector(log2(OUT_FEATURE_COUNT)-1 downto 0);
+    signal addr_y_write : std_logic_vector(log2(OUT_FEATURE_COUNT)-1 downto 0);
+
+    signal fp_x, fp_w, fp_b, fp_y, macc_sum : signed(DATA_WIDTH-1 downto 0);
+
+    signal reset : std_logic := '0';
+    signal state : t_state;
+
+    -- quick solution for now
+    type t_y_array is array (0 to OUT_FEATURE_COUNT) of std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal y_ram : t_y_array;
+    attribute rom_style : string;
+    attribute rom_style of y_ram : signal is "auto";
+
 begin
 
     -- connecting signals to ports
+    n_clock <= not clock;
+
     fp_w <= signed(w_in);
     fp_x <= signed(x_in);
     fp_b <= signed(b_in);
@@ -88,6 +112,8 @@ begin
         variable var_addr_w : integer := 0;
         variable var_sum : signed(DATA_WIDTH-1 downto 0);
         variable var_w, var_x, var_y : signed(DATA_WIDTH-1 downto 0);
+        variable y_write_en : std_logic;
+        variable var_y_write_idx : integer;
     begin
 
         if (reset = '1') then
@@ -116,6 +142,10 @@ begin
                 current_input_idx := current_neuron_idx + 1;
                 var_addr_w := var_addr_w + 1;
                 if current_input_idx=IN_FEATURE_COUNT then
+                    -- 
+                    y_write_en := '1';
+                    --addr_y_write <= std_logic_vector(to_unsigned(current_neuron_idx, addr_y_write'length));
+                    var_y_write_idx := current_neuron_idx;
                     current_input_idx := 0;
                     current_neuron_idx := current_neuron_idx + 1;
                     if current_neuron_idx=OUT_FEATURE_COUNT then
@@ -126,15 +156,40 @@ begin
                 end if;
             else
                 done <= '1';
+                y_out <= y_ram(to_integer(unsigned(addr_y)));
             end if;
 
             var_sum := multiply_accumulate(var_w, var_x, var_y);
             macc_sum <= var_sum;
 
+            if y_write_en='1'then
+                y_ram(var_y_write_idx) <= std_logic_vector(var_sum);
+                y_write_en := '0';
+            end if;
+
+
         end if;
 
         addr_x <= std_logic_vector(to_unsigned(current_input_idx, addr_x'length));
-        addr_w <= std_logic_vector(to_unsigned(var_addr_w, addr_x'length));
+        addr_w <= std_logic_vector(to_unsigned(var_addr_w, addr_w'length));
     end process linear_main;
 
+    -- Weights
+    rom_w : entity work.w_rom(rtl)
+    port map  (
+        clk  => n_clock,
+        en   => '1',
+        addr => addr_w,
+        data => w_in
+    );
+
+    -- Bias
+    rom_b : entity work.b_rom(rtl)
+    port map  (
+        clk  => n_clock,
+        en   => '1',
+        addr => addr_b, 
+        data => b_in
+    );
+    
 end architecture rtl;

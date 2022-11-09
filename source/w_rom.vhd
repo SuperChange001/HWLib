@@ -7,12 +7,12 @@ port (
 clk : in std_logic;
 en : in std_logic;
 addr : in std_logic_vector(3-1 downto 0);
-data : out std_logic_vector(16-1 downto 0)
+data : out std_logic_vector(8-1 downto 0)
 );
 end entity w_rom;
 architecture rtl of w_rom is
-type w_rom_array_t is array (0 to 2**3-1) of std_logic_vector(16-1 downto 0);
-signal ROM : w_rom_array_t:=(x"0001",x"0002",x"0003",x"0004",x"0005",x"0006",x"0000",x"0000");
+type w_rom_array_t is array (0 to 2**3-1) of std_logic_vector(8-1 downto 0);
+signal ROM : w_rom_array_t:=(x"01",x"02",x"03",x"04",x"05",x"06",x"00",x"00");
 attribute rom_style : string;
 attribute rom_style of ROM : signal is "auto";
 begin

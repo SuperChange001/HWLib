@@ -1,6 +1,5 @@
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.std_logic_unsigned.all;        -- for addition & counting
 use ieee.numeric_std.all;               -- for type conversions
 
 library work;
@@ -13,7 +12,8 @@ entity fp_linear_1d is
         DATA_WIDTH : integer;
         FRAC_WIDTH : integer;
         IN_FEATURE_COUNT : integer;
-        OUT_FEATURE_COUNT : integer
+        OUT_FEATURE_COUNT : integer;
+        OUT_BUF_TYPE : string
     );
     port (
         enable : in std_logic;
@@ -30,9 +30,9 @@ end fp_linear_1d;
 
 architecture rtl of fp_linear_1d is
     -----------------------------------------------------------
-    -- functions
+    -- Functions
     -----------------------------------------------------------
-    -- macc,
+    -- macc
     function multiply_accumulate(w : in signed(DATA_WIDTH-1 downto 0);
                     x : in signed(DATA_WIDTH-1 downto 0);
                     y_0 : in signed(DATA_WIDTH-1 downto 0)
@@ -58,6 +58,8 @@ architecture rtl of fp_linear_1d is
         return TEMP2+y_0;
     end function;
 
+    -- Log2 funtion is for calculating the bitwidth of the address lines 
+    -- for bias and weights rom
     function log2(val : INTEGER) return natural is
         variable res : natural;
     begin
@@ -70,28 +72,30 @@ architecture rtl of fp_linear_1d is
         return res;
     end function log2;
 
+    -----------------------------------------------------------
+    -- Signals
+    -----------------------------------------------------------
     constant FP_ZERO : signed(DATA_WIDTH-1 downto 0) := (others=>'0');
 
     type t_state is (s_stop, s_forward, s_idle);
 
     signal n_clock : std_logic;
-    signal w_in : std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal b_in : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal w_in : std_logic_vector(DATA_WIDTH-1 downto 0) := (others=>'0');
+    signal b_in : std_logic_vector(DATA_WIDTH-1 downto 0) := (others=>'0');
 
-    signal addr_w : std_logic_vector(log2(IN_FEATURE_COUNT*OUT_FEATURE_COUNT)-1 downto 0);
-    signal addr_b : std_logic_vector(log2(OUT_FEATURE_COUNT)-1 downto 0);
-    signal addr_y_write : std_logic_vector(log2(OUT_FEATURE_COUNT)-1 downto 0);
+    signal addr_w : std_logic_vector(log2(IN_FEATURE_COUNT*OUT_FEATURE_COUNT)-1 downto 0) := (others=>'0');
+    signal addr_b : std_logic_vector(log2(OUT_FEATURE_COUNT)-1 downto 0) := (others=>'0');
 
-    signal fp_x, fp_w, fp_b, fp_y, macc_sum : signed(DATA_WIDTH-1 downto 0);
+    signal fp_x, fp_w, fp_b, fp_y, macc_sum : signed(DATA_WIDTH-1 downto 0) := (others=>'0');
 
     signal reset : std_logic := '0';
     signal state : t_state;
 
-    -- quick solution for now
+    -- lazy solution for the output buffer
     type t_y_array is array (0 to OUT_FEATURE_COUNT) of std_logic_vector(DATA_WIDTH-1 downto 0);
     signal y_ram : t_y_array;
     attribute rom_style : string;
-    attribute rom_style of y_ram : signal is "auto";
+    attribute rom_style of y_ram : signal is OUT_BUF_TYPE;
 
 begin
 
@@ -102,14 +106,13 @@ begin
     fp_x <= signed(x_in);
     fp_b <= signed(b_in);
 
-        
     -- connects ports
     reset <= not enable;
 
     linear_main : process (clock, enable)
-        variable current_neuron_idx : integer := 0;
-        variable current_input_idx : integer := 0;
-        variable var_addr_w : integer := 0;
+        variable current_neuron_idx : integer range 0 to OUT_FEATURE_COUNT-1 := 0;
+        variable current_input_idx : integer  range 0 to IN_FEATURE_COUNT-1 := 0;
+        variable var_addr_w : integer range 0 to OUT_FEATURE_COUNT*IN_FEATURE_COUNT-1 := 0;
         variable var_sum : signed(DATA_WIDTH-1 downto 0);
         variable var_w, var_x, var_y : signed(DATA_WIDTH-1 downto 0);
         variable y_write_en : std_logic;
@@ -138,24 +141,30 @@ begin
                 var_y := macc_sum;
                 var_x := fp_x;
                 var_w := fp_w;
-
-                current_input_idx := current_neuron_idx + 1;
-                var_addr_w := var_addr_w + 1;
-                if current_input_idx=IN_FEATURE_COUNT then
-                    -- 
-                    y_write_en := '1';
-                    --addr_y_write <= std_logic_vector(to_unsigned(current_neuron_idx, addr_y_write'length));
-                    var_y_write_idx := current_neuron_idx;
+                
+                if current_input_idx<IN_FEATURE_COUNT-1 then
+                    current_input_idx := current_input_idx + 1;
+                    var_addr_w := var_addr_w + 1;
+                else
                     current_input_idx := 0;
-                    current_neuron_idx := current_neuron_idx + 1;
-                    if current_neuron_idx=OUT_FEATURE_COUNT then
-                        state <= s_idle;
-                    else
+
+                    y_write_en := '1';
+                    var_y_write_idx := current_neuron_idx;
+                    
+                    if current_neuron_idx<OUT_FEATURE_COUNT-1 then
+                        current_neuron_idx := current_neuron_idx + 1;
+                        var_addr_w := var_addr_w + 1;
                         state <= s_stop;
+                    else
+                        state <= s_idle;
+                        current_neuron_idx := 0;
                     end if;
+
                 end if;
             else
                 done <= '1';
+                -- After the layer in at idle mode, y_out is readable
+                -- but it only update at the rising edge of the clock
                 y_out <= y_ram(to_integer(unsigned(addr_y)));
             end if;
 
@@ -167,11 +176,11 @@ begin
                 y_write_en := '0';
             end if;
 
-
         end if;
 
         addr_x <= std_logic_vector(to_unsigned(current_input_idx, addr_x'length));
         addr_w <= std_logic_vector(to_unsigned(var_addr_w, addr_w'length));
+        addr_b <= std_logic_vector(to_unsigned(current_neuron_idx, addr_b'length));
     end process linear_main;
 
     -- Weights

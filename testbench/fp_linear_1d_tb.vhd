@@ -29,8 +29,8 @@ architecture rtl of fp_linear_1d_tb is
     signal x_in : std_logic_vector(7 downto 0);
     signal y_out : std_logic_vector(7 downto 0);
 
-    signal addr_x : std_logic_vector(1 downto 0);
-    signal addr_y : std_logic_vector(0 downto 0);
+    signal x_addr : std_logic_vector(1 downto 0);
+    signal y_addr : std_logic_vector(0 downto 0);
     
     signal done : std_logic;
     type t_array_x is array (0 to 3-1) of std_logic_vector(8-1 downto 0);
@@ -61,7 +61,7 @@ begin
     data_read : process( clock )
     begin
         if falling_edge(clock) then
-            x_in <= x_arr(to_integer(unsigned(addr_x)));
+            x_in <= x_arr(to_integer(unsigned(x_addr)));
         end if;
     end process ; -- data_read
 
@@ -70,16 +70,19 @@ begin
     -----------------------------------------------------------
     test_main : process
     begin
-        addr_y <= (others=>'0');
+        y_addr <= (others=>'0');
         linear_enable <= '0';
         wait until reset='0';
         wait for C_CLK_PERIOD;
         linear_enable <= '1';
         wait for C_CLK_PERIOD;
         wait until done='1';
-        addr_y <= (others=>'0');
+        y_addr <= (others=>'0');
         wait for C_CLK_PERIOD;
-        addr_y <= "1";
+        report "The correct value should be 17 while y_out is " & integer'image(to_integer(signed(y_out)));
+        y_addr <= "1";
+        wait for C_CLK_PERIOD;
+        report "The correct value should be 33 while y_out is " & integer'image(to_integer(signed(y_out)));
         wait;
     end process ; -- test_main
 
@@ -89,19 +92,19 @@ begin
     uut: entity work.fp_linear_1d(rtl)
     -- Testbench DUT generics
     generic map (
-        ADDR_X_WIDTH => 2,
-        ADDR_Y_WIDTH => 1,
+        X_ADDR_WIDTH => 2,
+        Y_ADDR_WIDTH => 1,
         DATA_WIDTH => 8,
         FRAC_WIDTH => 4,
-        IN_FEATURE_COUNT => 3,
-        OUT_FEATURE_COUNT => 2,
+        IN_FEATURE_NUM => 3,
+        OUT_FEATURE_NUM => 2,
         OUT_BUF_TYPE => "auto"
     )
     port map (
         enable => linear_enable,
         clock  => clock,
-        addr_x => addr_x,
-        addr_y => addr_y,
+        x_addr => x_addr,
+        y_addr => y_addr,
         
         x_in   => x_in,
         y_out   => y_out,

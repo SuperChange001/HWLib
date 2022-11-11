@@ -65,30 +65,56 @@ begin
         wait until clock='0';
         sigmoid_input <= std_logic_vector(to_signed(0, 8));
         wait for C_CLK_PERIOD*4;
+        report "The correct value should be 8 while sigmoid_output is " & integer'image(to_integer(signed(sigmoid_output)));
+
         sigmoid_input <= std_logic_vector(to_signed(-4, 8));
         wait for C_CLK_PERIOD*4;
+        report "The correct value should be 8 while sigmoid_output is " & integer'image(to_integer(signed(sigmoid_output)));
+
         sigmoid_input <= std_logic_vector(to_signed(0, 8));
         wait for C_CLK_PERIOD*4;
+        report "The correct value should be 8 while sigmoid_output is " & integer'image(to_integer(signed(sigmoid_output)));
+
         sigmoid_input <= std_logic_vector(to_signed(4, 8));
         wait for C_CLK_PERIOD*4;
+        report "The correct value should be 8 while sigmoid_output is " & integer'image(to_integer(signed(sigmoid_output)));
+
         sigmoid_input <= std_logic_vector(to_signed(0, 8));
         wait for C_CLK_PERIOD*4;
+        report "The correct value should be 8 while sigmoid_output is " & integer'image(to_integer(signed(sigmoid_output)));
+
         sigmoid_input <= std_logic_vector(to_signed(-48, 8));
         wait for C_CLK_PERIOD*4;
+        report "The correct value should be 0 while sigmoid_output is " & integer'image(to_integer(signed(sigmoid_output)));
+
         sigmoid_input <= std_logic_vector(to_signed(0, 8));
         wait for C_CLK_PERIOD*4;
+        report "The correct value should be 8 while sigmoid_output is " & integer'image(to_integer(signed(sigmoid_output)));
+
         sigmoid_input <= std_logic_vector(to_signed(48, 8));
         wait for C_CLK_PERIOD*4;
+        report "The correct value should be 16 while sigmoid_output is " & integer'image(to_integer(signed(sigmoid_output)));
+        
         sigmoid_input <= std_logic_vector(to_signed(0, 8));
         wait for C_CLK_PERIOD*4;
+        report "The correct value should be 8 while sigmoid_output is " & integer'image(to_integer(signed(sigmoid_output)));
+
         sigmoid_input <= std_logic_vector(to_signed(-24, 8));
         wait for C_CLK_PERIOD*4;
+        report "The correct value should be 5 while sigmoid_output is " & integer'image(to_integer(signed(sigmoid_output)));
+
         sigmoid_input <= std_logic_vector(to_signed(0, 8));
         wait for C_CLK_PERIOD*4;
+        report "The correct value should be 8 while sigmoid_output is " & integer'image(to_integer(signed(sigmoid_output)));
+
         sigmoid_input <= std_logic_vector(to_signed(24, 8));
         wait for C_CLK_PERIOD*4;
+        report "The correct value should be 11 while sigmoid_output is " & integer'image(to_integer(signed(sigmoid_output)));
+
         sigmoid_input <= std_logic_vector(to_signed(0, 8));
         wait for C_CLK_PERIOD*4;
+        report "The correct value should be 8 while sigmoid_output is " & integer'image(to_integer(signed(sigmoid_output)));
+
         wait;
     end process ; -- test_main
 

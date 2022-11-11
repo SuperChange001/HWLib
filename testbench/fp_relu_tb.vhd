@@ -63,20 +63,36 @@ begin
         wait until reset='0';
         wait until clock='0';
         relu_input <= std_logic_vector(to_signed(-4, 8));
-        wait for C_CLK_PERIOD*4;
+        wait for C_CLK_PERIOD*1;
+        report "The correct value should be 0 while relu_output is " & integer'image(to_integer(signed(relu_output)));
+        
         relu_input <= std_logic_vector(to_signed(0, 8));
-        wait for C_CLK_PERIOD*4;
+        wait for C_CLK_PERIOD*1;
+        report "The correct value should be 0 while relu_output is " & integer'image(to_integer(signed(relu_output)));
+
         relu_input <= std_logic_vector(to_signed(-128, 8));
-        wait for C_CLK_PERIOD*4;
+        wait for C_CLK_PERIOD*1;
+        report "The correct value should be 0 while relu_output is " & integer'image(to_integer(signed(relu_output)));
+
         relu_input <= std_logic_vector(to_signed(0, 8));
-        wait for C_CLK_PERIOD*4;
+        wait for C_CLK_PERIOD*1;
+        report "The correct value should be 17 while relu_output is " & integer'image(to_integer(signed(relu_output)));
+
         relu_input <= std_logic_vector(to_signed(1, 8));
-        wait for C_CLK_PERIOD*4;
+        wait for C_CLK_PERIOD*1;
+        report "The correct value should be 1 while relu_output is " & integer'image(to_integer(signed(relu_output)));
+
         relu_input <= std_logic_vector(to_signed(0, 8));
-        wait for C_CLK_PERIOD*4;
+        wait for C_CLK_PERIOD*1;
+        report "The correct value should be 0 while relu_output is " & integer'image(to_integer(signed(relu_output)));
+
         relu_input <= std_logic_vector(to_signed(127, 8));
-        wait for C_CLK_PERIOD*4;
+        wait for C_CLK_PERIOD*1;
+        report "The correct value should be 127 while relu_output is " & integer'image(to_integer(signed(relu_output)));
+
         relu_input <= std_logic_vector(to_signed(0, 8));
+        wait for C_CLK_PERIOD*1;
+        report "The correct value should be 0 while relu_output is " & integer'image(to_integer(signed(relu_output)));
         wait;
     end process ; -- test_main
 

@@ -2,7 +2,7 @@
 # make TESTBENCH=hello
 
 # vhdl files
-FILES = source/*.vhd source/*/*.vhd
+FILES = source/*.vhd source/*/*.vhd source/*/*/*.vhd
 VHDLEX = .vhd
 
 # testbench

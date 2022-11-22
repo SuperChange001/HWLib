@@ -5,15 +5,15 @@ use ieee.numeric_std.all;               -- for type conversions
 library work;
 use work.all;
 
-entity fp_linear_1d is
+entity fp_linear_1d_0 is -- layer_name is for distinguish same type of layers (with various weights) in one module
     generic (
-        X_ADDR_WIDTH : integer;
-        Y_ADDR_WIDTH : integer;
-        DATA_WIDTH : integer;
-        FRAC_WIDTH : integer;
-        IN_FEATURE_NUM : integer;
-        OUT_FEATURE_NUM : integer;
-        OUT_BUF_TYPE : string
+        DATA_WIDTH   : integer := 8;
+        FRAC_WIDTH   : integer := 4;
+        X_ADDR_WIDTH : integer := 2;
+        Y_ADDR_WIDTH : integer := 2;
+        IN_FEATURE_NUM : integer := 3;
+        OUT_FEATURE_NUM : integer := 4;
+        RESOURCE_OPTION : string := "auto" -- can be "distributed", "block", or  "auto"
     );
     port (
         enable : in std_logic;
@@ -26,9 +26,9 @@ entity fp_linear_1d is
 
         done   : out std_logic
     );
-end fp_linear_1d;
+end fp_linear_1d_0;
 
-architecture rtl of fp_linear_1d is
+architecture rtl of fp_linear_1d_0 is
     -----------------------------------------------------------
     -- Functions
     -----------------------------------------------------------
@@ -43,7 +43,7 @@ architecture rtl of fp_linear_1d is
         variable TEMP3 : signed(FRAC_WIDTH-1 downto 0) := (others=>'0');
     begin
         TEMP := w * x;
-        
+
         TEMP2 := TEMP(DATA_WIDTH+FRAC_WIDTH-1 downto FRAC_WIDTH);
         TEMP3 := TEMP(FRAC_WIDTH-1 downto 0);
         if TEMP2(DATA_WIDTH-1) = '1' and TEMP3 /= 0 then
@@ -58,7 +58,7 @@ architecture rtl of fp_linear_1d is
         return TEMP2+y_0;
     end function;
 
-    -- Log2 funtion is for calculating the bitwidth of the address lines 
+    -- Log2 funtion is for calculating the bitwidth of the address lines
     -- for bias and weights rom
     function log2(val : INTEGER) return natural is
         variable res : natural;
@@ -84,10 +84,8 @@ architecture rtl of fp_linear_1d is
     signal b_in : std_logic_vector(DATA_WIDTH-1 downto 0) := (others=>'0');
 
     signal addr_w : std_logic_vector(log2(IN_FEATURE_NUM*OUT_FEATURE_NUM)-1 downto 0) := (others=>'0');
-
-    -- todo check why the commented one doesn't work
-    --signal addr_b : std_logic_vector(log2(OUT_FEATURE_NUM)-1 downto 0) := (others=>'0');
-    signal addr_b : std_logic_vector(Y_ADDR_WIDTH-1 downto 0) := (others=>'0'); 
+    --signal addr_b : std_logic_vector((log2(OUT_FEATURE_NUM)-1) downto 0) := (others=>'0');
+    signal addr_b : std_logic_vector(Y_ADDR_WIDTH-1 downto 0) := (others=>'0');
 
     signal fp_x, fp_w, fp_b, fp_y, macc_sum : signed(DATA_WIDTH-1 downto 0) := (others=>'0');
 
@@ -98,7 +96,7 @@ architecture rtl of fp_linear_1d is
     type t_y_array is array (0 to OUT_FEATURE_NUM) of std_logic_vector(DATA_WIDTH-1 downto 0);
     signal y_ram : t_y_array;
     attribute rom_style : string;
-    attribute rom_style of y_ram : signal is OUT_BUF_TYPE;
+    attribute rom_style of y_ram : signal is RESOURCE_OPTION;
 
 begin
 
@@ -139,12 +137,12 @@ begin
                 var_x := FP_ZERO;
                 var_w := FP_ZERO;
             elsif state=s_forward then
-                
-                -- remapping to x and w 
+
+                -- remapping to x and w
                 var_y := macc_sum;
                 var_x := fp_x;
                 var_w := fp_w;
-                
+
                 if current_input_idx<IN_FEATURE_NUM-1 then
                     current_input_idx := current_input_idx + 1;
                     var_addr_w := var_addr_w + 1;
@@ -153,7 +151,7 @@ begin
 
                     y_write_en := '1';
                     var_y_write_idx := current_neuron_idx;
-                    
+
                     if current_neuron_idx<OUT_FEATURE_NUM-1 then
                         current_neuron_idx := current_neuron_idx + 1;
                         var_addr_w := var_addr_w + 1;
@@ -187,7 +185,7 @@ begin
     end process linear_main;
 
     -- Weights
-    rom_w : entity work.w_rom(rtl)
+    rom_w : entity work.w_rom_fp_linear_1d_0(rtl)
     port map  (
         clk  => n_clock,
         en   => '1',
@@ -196,12 +194,12 @@ begin
     );
 
     -- Bias
-    rom_b : entity work.b_rom(rtl)
+    rom_b : entity work.b_rom_fp_linear_1d_0(rtl)
     port map  (
         clk  => n_clock,
         en   => '1',
-        addr => addr_b, 
+        addr => addr_b,
         data => b_in
     );
-    
+
 end architecture rtl;

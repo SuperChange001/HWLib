@@ -98,8 +98,7 @@ begin
     i_fp_hard_sigmoid_enable <= i_fp_linear_1d_1_done; -- only enable when the last layer is finished.
     i_fp_hard_sigmoid_clock <= clock;
     i_fp_hard_sigmoid_input <= i_fp_linear_1d_1_y_out;
-    y_out <= i_fp_linear_1d_1_y_out;
-    --i_fp_hard_sigmoid_output;
+    y_out <= i_fp_hard_sigmoid_output;
 
     -- finally
     done <= i_fp_linear_1d_1_done;

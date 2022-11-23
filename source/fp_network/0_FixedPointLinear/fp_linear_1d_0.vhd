@@ -92,7 +92,7 @@ architecture rtl of fp_linear_1d_0 is
     signal reset : std_logic := '0';
     signal state : t_state;
 
-    -- lazy solution for the output buffer
+    -- simple solution for the output buffer
     type t_y_array is array (0 to OUT_FEATURE_NUM) of std_logic_vector(DATA_WIDTH-1 downto 0);
     shared variable y_ram : t_y_array;
     attribute rom_style : string;

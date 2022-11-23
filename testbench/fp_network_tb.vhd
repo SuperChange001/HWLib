@@ -34,10 +34,10 @@ architecture rtl of fp_network_tb is
     
     signal done : std_logic;
     type t_array_x is array (0 to 3-1) of std_logic_vector(8-1 downto 0);
-    signal x_arr : t_array_x := (x"00",x"00",x"00"); -- 5
-    --signal x_arr : t_array_x := (x"10",x"10",x"10"); -- 8
-    --signal x_arr : t_array_x := (x"20",x"20",x"20"); -- 12
-    --signal x_arr : t_array_x := (x"30",x"30",x"30"); -- 15
+    --signal x_arr : t_array_x := (x"00",x"00",x"00"); -- 8.6
+    --signal x_arr : t_array_x := (x"10",x"10",x"10"); -- 9.1
+    --signal x_arr : t_array_x := (x"20",x"20",x"20"); -- 9.8
+    signal x_arr : t_array_x := (x"30",x"30",x"30"); -- 11
 
 begin
     -----------------------------------------------------------

@@ -34,10 +34,10 @@ architecture rtl of fp_network_tb is
     
     signal done : std_logic;
     type t_array_x is array (0 to 3-1) of std_logic_vector(8-1 downto 0);
-    --signal x_arr : t_array_x := (x"00",x"00",x"00");
-    --signal x_arr : t_array_x := (x"10",x"10",x"10"); 
-    --signal x_arr : t_array_x := (x"20",x"20",x"20"); 
-    signal x_arr : t_array_x := (x"30",x"30",x"30"); 
+    signal x_arr : t_array_x := (x"00",x"00",x"00"); -- 5
+    --signal x_arr : t_array_x := (x"10",x"10",x"10"); -- 8
+    --signal x_arr : t_array_x := (x"20",x"20",x"20"); -- 12
+    --signal x_arr : t_array_x := (x"30",x"30",x"30"); -- 15
 
 begin
     -----------------------------------------------------------
@@ -81,7 +81,7 @@ begin
         wait until done='1';
         y_addr <= (others=>'0');
         wait for 4*C_CLK_PERIOD;
-        report "The correct value should be 17 while y_out is " & integer'image(to_integer(signed(y_out)));
+        report "The correct value should be (check comments in the source code) while y_out is " & integer'image(to_integer(signed(y_out)));
         report "simulation stops here";
         wait;
     end process ; -- test_main

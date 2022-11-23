@@ -12,7 +12,7 @@ use ieee.numeric_std.all;
 entity fp_relu_3 is
 generic (
     DATA_WIDTH : integer := 8;
-    CLOCK_OPTION : boolean := true
+    CLOCK_OPTION : boolean := false
 );
 port (
     enable : in std_logic;

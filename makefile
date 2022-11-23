@@ -23,7 +23,8 @@ WAVEFORM_VIEWER = gtkwave
 
 .PHONY: clean
 
-all: clean make run view
+all: clean make run
+
 
 make:
 ifeq ($(strip $(TESTBENCH)),)

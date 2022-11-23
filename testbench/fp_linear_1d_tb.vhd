@@ -98,7 +98,7 @@ begin
         FRAC_WIDTH => 4,
         IN_FEATURE_NUM => 3,
         OUT_FEATURE_NUM => 2,
-        OUT_BUF_TYPE => "auto"
+        RESOURCE_OPTION => "auto"
     )
     port map (
         enable => linear_enable,

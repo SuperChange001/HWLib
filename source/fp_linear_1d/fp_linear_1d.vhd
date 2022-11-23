@@ -13,7 +13,7 @@ entity fp_linear_1d is
         FRAC_WIDTH : integer;
         IN_FEATURE_NUM : integer;
         OUT_FEATURE_NUM : integer;
-        OUT_BUF_TYPE : string
+        RESOURCE_OPTION : string
     );
     port (
         enable : in std_logic;
@@ -96,9 +96,9 @@ architecture rtl of fp_linear_1d is
 
     -- lazy solution for the output buffer
     type t_y_array is array (0 to OUT_FEATURE_NUM) of std_logic_vector(DATA_WIDTH-1 downto 0);
-    signal y_ram : t_y_array;
+    shared variable y_ram : t_y_array;
     attribute rom_style : string;
-    attribute rom_style of y_ram : signal is OUT_BUF_TYPE;
+    attribute rom_style of y_ram : variable is RESOURCE_OPTION;
 
 begin
 
@@ -166,16 +166,13 @@ begin
                 end if;
             else
                 done <= '1';
-                -- After the layer in at idle mode, y_out is readable
-                -- but it only update at the rising edge of the clock
-                y_out <= y_ram(to_integer(unsigned(y_addr)));
             end if;
 
             var_sum := multiply_accumulate(var_w, var_x, var_y);
             macc_sum <= var_sum;
 
             if y_write_en='1'then
-                y_ram(var_y_write_idx) <= std_logic_vector(var_sum);
+                y_ram(var_y_write_idx) := std_logic_vector(var_sum);
                 y_write_en := '0';
             end if;
 
@@ -185,6 +182,18 @@ begin
         addr_w <= std_logic_vector(to_unsigned(var_addr_w, addr_w'length));
         addr_b <= std_logic_vector(to_unsigned(current_neuron_idx, addr_b'length));
     end process linear_main;
+
+    y_reading : process (clock, state)
+    begin
+        if state=s_idle then
+            if falling_edge(clock) then
+                -- After the layer in at idle mode, y_out is readable
+                -- but it only update at the rising edge of the clock
+                y_out <= y_ram(to_integer(unsigned(y_addr)));
+            end if;
+        end if;
+    end process y_reading;
+
 
     -- Weights
     rom_w : entity work.w_rom(rtl)

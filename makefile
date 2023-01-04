@@ -23,7 +23,7 @@ WAVEFORM_VIEWER = gtkwave
 
 .PHONY: clean
 
-all: clean make run
+all: clean make run view
 
 
 make:

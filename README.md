@@ -45,6 +45,8 @@ all outputs match the expected value, which means the test passed.
 - [x] interface definition
 - [x] we need the implementation of `hard_sigmoid` function
 	- [x] test coverage
+- [x] we need the implementation of `hard_tanh` function
+	- [x] test coverage
 - [x] implementation of the `Relu` function
 	- [x] test coverage
 - [x] implementation of the full functional `linear layer`

@@ -53,17 +53,21 @@ architecture rtl of fp_lstm is
     signal lstm_cell_reset: std_logic;
     signal lstm_cell_enable: std_logic;
     signal lstm_cell_zero_state : std_logic;
-    signal lstm_cell_x_addr : std_logic_vector(log2(IN_FEATURE_NUM) downto 0):=(others=>'0');
+    signal lstm_cell_x_addr : std_logic_vector(LSTM_CELL_X_ADDR_WIDTH-1 downto 0):=(others=>'0');
     signal lstm_cell_x_data : std_logic_vector(DATA_WIDTH-1 downto 0);
     signal lstm_cell_out_data : std_logic_vector(DATA_WIDTH-1 downto 0);
     signal lstm_cell_out_addr : std_logic_vector(Y_ADDR_WIDTH-1 downto 0);
     signal lstm_cell_out_en : std_logic;
 
 begin
+    lstm_cell_out_addr <= y_addr;
+    lstm_cell_x_data <= x_in;
+    y_out <= lstm_cell_out_data;
 
     cell_iteration: process(clock)
         variable lstm_cell_counter : integer range 0 to LSTM_INPUTS := 0;
-        variable x_addr_offset : integer range 0 to LSTM_INPUTS*IN_FEATURE_NUM := 0;
+        variable x_addr_offset : integer range 0 to LSTM_INPUTS*IN_FEATURE_NUM-1 := 0;
+        variable var_x_addr : integer range 0 to LSTM_INPUTS*IN_FEATURE_NUM-1 := 0;
     begin
         if rising_edge(clock) then
             if enable='0' then
@@ -101,7 +105,8 @@ begin
 
             end if;
             -- supports multiple input features and multiple input time steps
-            x_addr <= std_logic_vector(to_unsigned(x_addr_offset, X_ADDR_WIDTH)+unsigned(lstm_cell_x_addr));
+            var_x_addr := x_addr_offset + to_integer(unsigned(lstm_cell_x_addr));
+            x_addr <= std_logic_vector(to_unsigned(var_x_addr, x_addr'length));
         end if;
     end process; -- cell_iteration
 

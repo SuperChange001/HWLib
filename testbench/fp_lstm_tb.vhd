@@ -29,7 +29,7 @@ architecture rtl of fp_lstm_tb is
     signal x_in : std_logic_vector(15 downto 0);
     signal y_out : std_logic_vector(15 downto 0);
 
-    signal x_addr : std_logic_vector(5-1 downto 0);
+    signal x_addr : std_logic_vector(3-1 downto 0);
     signal y_addr : std_logic_vector(5-1 downto 0);
     
     signal done : std_logic;
@@ -96,7 +96,7 @@ begin
     uut: entity work.fp_lstm(rtl)
     -- Testbench DUT generics
     generic map (
-        X_ADDR_WIDTH => 5,
+        X_ADDR_WIDTH => 3,
         Y_ADDR_WIDTH => 5,
         DATA_WIDTH => 16,
         FRAC_WIDTH => 8,

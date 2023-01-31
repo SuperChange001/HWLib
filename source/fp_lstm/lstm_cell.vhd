@@ -9,14 +9,14 @@ use work.lstm_common.all;
 
 entity lstm_cell is
     generic (
-        DATA_WIDTH  : integer := 8;    -- that fixed point data has 16bits
-        FRAC_WIDTH  : integer := 4;     -- and 8bits is for the factional part
+        DATA_WIDTH  : integer;    -- that fixed point data has 16bits
+        FRAC_WIDTH  : integer;     -- and 8bits is for the factional part
 
-        INPUT_SIZE  : integer := 5;     -- same as input_size of the lstm_cell in PyTorch
-        HIDDEN_SIZE : integer := 3;     -- same as hidden_size of the lstm_cell in PyTorch
+        INPUT_SIZE  : integer;     -- same as input_size of the lstm_cell in PyTorch
+        HIDDEN_SIZE : integer;     -- same as hidden_size of the lstm_cell in PyTorch
 
-        X_ADDR_WIDTH : integer := 3;  -- equals to ceil(log2(input_size+hidden_size))
-        HIDDEN_ADDR_WIDTH : integer := 3  -- equals to ceil(log2(hidden_size))
+        X_ADDR_WIDTH : integer;  -- equals to ceil(log2(input_size+hidden_size))
+        HIDDEN_ADDR_WIDTH : integer  -- equals to ceil(log2(hidden_size))
 
         );
     port (
@@ -25,7 +25,7 @@ entity lstm_cell is
         reset     : in std_logic;
         enable    : in std_logic;    -- start computing when it is '1'
         zero_state : in std_logic;   -- first_round so h_t is zero, c_t is also zero
-        x_addr  : out std_logic_vector(INPUT_SIZE-1 downto 0); -- each rising_edge update x_data
+        x_addr  : out std_logic_vector(X_ADDR_WIDTH-1 downto 0); -- each rising_edge update x_data
         x_data  : in std_logic_vector(DATA_WIDTH-1 downto 0);
 
         done      : out std_logic;
@@ -63,10 +63,11 @@ architecture rtl of lstm_cell is
     type state_t is (s_gates, s_i, s_f, s_g, s_o, s_c, s_h,s_update, idle);
     signal cell_state : state_t;
 
-    signal std_x_h_read_addr : std_logic_vector((HIDDEN_ADDR_WIDTH-1) downto 0):= (others => '0');
+    signal std_h_read_addr : std_logic_vector((HIDDEN_ADDR_WIDTH-1) downto 0):= (others => '0');
     signal std_x_h_read_data : std_logic_vector((DATA_WIDTH-1) downto 0):= (others => '0');
     signal std_c_read_addr : std_logic_vector((HIDDEN_ADDR_WIDTH-1) downto 0):= (others => '0');
     signal std_c_read_data : std_logic_vector((DATA_WIDTH-1) downto 0):= (others => '0');
+    signal x_addr_s : std_logic_vector((X_ADDR_WIDTH-1) downto 0):= (others => '0');
     signal x_h_read_data      : signed(DATA_WIDTH-1 downto 0):= (others => '0');
     signal c_read_data : signed((DATA_WIDTH-1) downto 0):= (others => '0');
 
@@ -143,6 +144,8 @@ n_clock <= not clock;
 -- for clock scaling basically
 clk_hadamard_internal <= clock;
 
+-- x_addr <= x_addr_s;
+
 -- process(clock)
 -- variable cnt:unsigned(3 downto 0):="0000";
 -- begin
@@ -163,7 +166,7 @@ generic map (
 )
 port map  (
     addra  => x_h_config_addr,
-    addrb  => std_x_h_read_addr,
+    addrb  => std_h_read_addr,
     dina   => x_h_config_data,
     clka   => clock,
     clkb   => n_clock,
@@ -270,6 +273,7 @@ end process;
 
 gate_process : process(clock, gate_process_enable, reset)
     variable var_x_h_idx : integer range 0 to VECTOR_LENGTH;
+    variable var_h_idx : integer range 0 to hidden_size-1 ;
     variable is_data_prefetched : std_logic;
     variable dot_sum_i, dot_sum_f,dot_sum_g, dot_sum_o : signed(2*DATA_WIDTH-1 downto 0);
     variable mul_i, mul_f, mul_g, mul_o : signed(2*DATA_WIDTH-1 downto 0);
@@ -283,6 +287,7 @@ gate_process : process(clock, gate_process_enable, reset)
 begin
 
         if reset = '1' then
+            x_addr <= (others=>'0');
             var_x_h_idx := 0;
             var_matrix_idx := 0;
             var_hidden_idx := 0;
@@ -293,12 +298,12 @@ begin
             dot_sum_f := (others=>'0');
             dot_sum_g := (others=>'0');
             dot_sum_o := (others=>'0');
-       elsif rising_edge(clock) then
-         
+        elsif rising_edge(clock) then
+
             if gate_process_enable = '1' and gate_process_done='0' then
                 if is_data_prefetched ='0' then
                     is_data_prefetched := '1';
-                    if var_x_h_idx = 0 then
+                    if var_x_h_idx < INPUT_SIZE then
                         var_x_h_data := signed(x_data);
                     else
                         if zero_state = '1' then
@@ -314,9 +319,9 @@ begin
                     
                 else
     
-                     if var_x_h_idx = 1 then   -- 1,2,4,8 for 100MHz, 50MHz, 25MHz, 12.5MHz
+                    if var_x_h_idx = 1 then   -- 1,2,4,8 for 100MHz, 50MHz, 25MHz, 12.5MHz
                         gates_out_valid <= '0';
-                     end if;
+                    end if;
     
                     mul_i := multiply_16_8_without_cut(var_x_h_data, var_w_i_data);
                     mul_f := multiply_16_8_without_cut(var_x_h_data, var_w_f_data);
@@ -359,7 +364,16 @@ begin
                     end if;
                 end if;
             end if;
-            std_x_h_read_addr <= std_logic_vector(to_unsigned(var_x_h_idx-1, std_x_h_read_addr'length));
+
+            if var_x_h_idx < INPUT_SIZE then
+                -- loading X
+                x_addr <= std_logic_vector(to_unsigned(var_x_h_idx, x_addr'length));
+            else
+                -- loading hidden states
+                var_h_idx := var_x_h_idx-INPUT_SIZE;
+            end if;
+            
+            std_h_read_addr <= std_logic_vector(to_unsigned(var_h_idx, std_h_read_addr'length));
             std_w_read_addr <= std_logic_vector(to_unsigned(var_matrix_idx, std_w_read_addr'length));
             std_b_read_addr <= std_logic_vector(to_unsigned(var_hidden_idx, std_b_read_addr'length));
         
@@ -386,7 +400,8 @@ vector_hadamard_product: process(reset, clk_hadamard_internal, gates_out_valid)
     variable var_running_state : integer range 0 to 7;
     variable mul_f_c, mul_i_g: signed(DATA_WIDTH-1 downto 0);
     variable var_new_c,var_new_h : signed(DATA_WIDTH-1 downto 0);
-    variable new_c_idx, new_h_idx, update_cnt : integer range 0 to HIDDEN_SIZE;
+    variable new_h_idx : integer range 0 to HIDDEN_SIZE-1;
+    variable new_c_idx, update_cnt : integer range 0 to HIDDEN_SIZE;
     variable var_c_read_data, var_f_gate_act, var_i_gate_act, var_g_gate_act, var_o_gate_act : signed(DATA_WIDTH-1 downto 0);
     variable var_new_c_act : signed(DATA_WIDTH-1 downto 0);
     variable fms_act : integer:=0;
@@ -445,15 +460,15 @@ begin
                 var_new_c_act := tanh_out;
             elsif var_running_state=4 then
                 
-                
-                
                 var_new_h := multiply_16_8(var_o_gate_act, var_new_c_act);
                 new_h <= var_new_h;
 --                var_buffer_h_t(new_h_idx) := var_new_h;
-                temp_h_config_addr <= std_logic_vector(to_unsigned(new_h_idx, X_ADDR_WIDTH));
+                temp_h_config_addr <= std_logic_vector(to_unsigned(new_h_idx, temp_h_config_addr'length));
                 temp_h_config_data <= std_logic_vector(var_new_h);
                 temp_h_config_we <= '1';
-                new_h_idx := new_h_idx+1;
+                if new_h_idx < HIDDEN_SIZE-1 then
+                    new_h_idx := new_h_idx+1;
+                end if;
                 fms_act := 0;
                 if gate_process_done='0' then
                     var_running_state := 0;

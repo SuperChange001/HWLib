@@ -8,6 +8,7 @@ This repo host under developing HW components for my research interest. Besides,
 ```
 sudo apt install ghdl gtkwave 
 ```
+Please note that this library is only tested on GDL1.0.0 yet. We plan to also check on GDL3.0.0 in the near feature.
 
 ## File structure
 ```
